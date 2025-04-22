@@ -1,0 +1,68 @@
+import type { Product } from "./types"
+
+export const phones: Product[] = [
+  {
+    id: "phone-1",
+    name: "SuperPhone Pro Max",
+    description: "Le smartphone le plus puissant de notre gamme avec un écran OLED de 6.7 pouces",
+    price: 1299.99,
+    image: "/placeholder.svg?height=400&width=400",
+    features: [
+      "Écran OLED 6.7 pouces",
+      "Processeur octa-core 3.2 GHz",
+      "12 Go de RAM",
+      "Stockage 512 Go",
+      "Triple caméra arrière 108MP",
+      "Batterie 5000 mAh",
+      "Charge rapide 65W",
+    ],
+  },
+  {
+    id: "phone-2",
+    name: "SuperPhone Standard",
+    description: "L'équilibre parfait entre performance et prix avec un écran AMOLED de 6.4 pouces",
+    price: 899.99,
+    image: "/placeholder.svg?height=400&width=400",
+    features: [
+      "Écran AMOLED 6.4 pouces",
+      "Processeur octa-core 2.8 GHz",
+      "8 Go de RAM",
+      "Stockage 256 Go",
+      "Double caméra arrière 64MP",
+      "Batterie 4500 mAh",
+      "Charge rapide 33W",
+    ],
+  },
+  {
+    id: "phone-3",
+    name: "SuperPhone Lite",
+    description: "Un smartphone abordable avec d'excellentes performances et un écran LCD de 6.1 pouces",
+    price: 599.99,
+    image: "/placeholder.svg?height=400&width=400",
+    features: [
+      "Écran LCD 6.1 pouces",
+      "Processeur octa-core 2.4 GHz",
+      "6 Go de RAM",
+      "Stockage 128 Go",
+      "Caméra arrière 48MP",
+      "Batterie 4000 mAh",
+      "Charge rapide 18W",
+    ],
+  },
+  {
+    id: "phone-4",
+    name: "SuperPhone Ultra",
+    description: "Notre modèle haut de gamme avec écran pliable et technologie de pointe",
+    price: 1899.99,
+    image: "/placeholder.svg?height=400&width=400",
+    features: [
+      "Écran pliable AMOLED 7.6 pouces",
+      "Processeur octa-core 3.5 GHz",
+      "16 Go de RAM",
+      "Stockage 1 To",
+      "Système de caméra avancé 200MP",
+      "Batterie 6000 mAh",
+      "Charge rapide 120W",
+    ],
+  },
+]
