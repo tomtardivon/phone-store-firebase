@@ -1,60 +1,99 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { Eye, EyeOff, Loader2 } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { useToast } from "@/hooks/use-toast"
-import { useAuth } from "@/lib/firebase/auth"
+import { useState, useEffect } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/lib/firebase/auth";
+import { getRedirectResult } from "firebase/auth";
+import { getFirebaseAuth } from "@/lib/firebase/config";
 
 export default function RegisterPage() {
-  const [name, setName] = useState("")
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [confirmPassword, setConfirmPassword] = useState("")
-  const [showPassword, setShowPassword] = useState(false)
-  const [isLoading, setIsLoading] = useState(false)
-  const { createUser, signInWithGoogle } = useAuth()
-  const { toast } = useToast()
-  const router = useRouter()
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const { createUser, signInWithGoogle, user } = useAuth();
+  const { toast } = useToast();
+  const router = useRouter();
+
+  // Gérer le résultat de redirection
+  useEffect(() => {
+    const checkRedirectResult = async () => {
+      const auth = getFirebaseAuth();
+      if (auth) {
+        try {
+          const result = await getRedirectResult(auth);
+          if (result?.user) {
+            toast({
+              title: "Connexion réussie",
+              description: "Vous êtes maintenant connecté avec Google",
+            });
+            router.push("/");
+          }
+        } catch (error) {
+          console.error("Redirect error:", error);
+          toast({
+            title: "Erreur de connexion",
+            description: "Impossible de se connecter avec Google",
+            variant: "destructive",
+          });
+        }
+      }
+    };
+
+    checkRedirectResult();
+  }, [router, toast]);
+
+  // Rediriger si l'utilisateur est déjà connecté
+  useEffect(() => {
+    if (user) {
+      router.push("/");
+    }
+  }, [user, router]);
 
   const handleGoogleSignIn = async () => {
     try {
-      setIsLoading(true)
-      await signInWithGoogle()
-      toast({
-        title: "Connexion réussie",
-        description: "Vous êtes maintenant connecté avec Google",
-      })
-      router.push("/")
+      setIsLoading(true);
+      await signInWithGoogle();
+      // La redirection sera gérée par getRedirectResult
     } catch (error: any) {
-      console.error("Google login error:", error)
+      console.error("Google login error:", error);
       toast({
         title: "Erreur de connexion",
         description: "Impossible de se connecter avec Google",
         variant: "destructive",
-      })
-    } finally {
-      setIsLoading(false)
+      });
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
 
     if (!name || !email || !password || !confirmPassword) {
       toast({
         title: "Erreur",
         description: "Veuillez remplir tous les champs",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
     if (password !== confirmPassword) {
@@ -62,36 +101,39 @@ export default function RegisterPage() {
         title: "Erreur",
         description: "Les mots de passe ne correspondent pas",
         variant: "destructive",
-      })
-      return
+      });
+      return;
     }
 
     try {
-      setIsLoading(true)
-      await createUser(email, password, name)
+      setIsLoading(true);
+      await createUser(email, password, name);
       toast({
         title: "Compte créé",
         description: "Votre compte a été créé avec succès",
-      })
-      router.push("/")
+      });
+      router.push("/");
     } catch (error: any) {
-      console.error("Registration error:", error)
+      console.error("Registration error:", error);
       toast({
         title: "Erreur d'inscription",
-        description: error.message || "Une erreur est survenue lors de l'inscription",
+        description:
+          error.message || "Une erreur est survenue lors de l'inscription",
         variant: "destructive",
-      })
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <div className="container mx-auto px-4 py-16 flex justify-center">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle className="text-2xl">Créer un compte</CardTitle>
-          <CardDescription>Inscrivez-vous pour accéder à toutes nos fonctionnalités</CardDescription>
+          <CardDescription>
+            Inscrivez-vous pour accéder à toutes nos fonctionnalités
+          </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
@@ -138,7 +180,11 @@ export default function RegisterPage() {
                   className="absolute right-0 top-0 h-full"
                   onClick={() => setShowPassword(!showPassword)}
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
                 </Button>
               </div>
             </div>
@@ -174,7 +220,9 @@ export default function RegisterPage() {
                 <span className="w-full border-t" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-background px-2 text-muted-foreground">Ou</span>
+                <span className="bg-background px-2 text-muted-foreground">
+                  Ou
+                </span>
               </div>
             </div>
 
@@ -217,5 +265,5 @@ export default function RegisterPage() {
         </form>
       </Card>
     </div>
-  )
+  );
 }
