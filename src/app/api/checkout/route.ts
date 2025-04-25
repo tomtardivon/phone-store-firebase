@@ -8,8 +8,8 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 
 export async function POST(req: NextRequest) {
   try {
-    const { items, userId } = await req.json();
-
+    const { items, userId, userEmail } = await req.json();
+    
     if (!items || items.length === 0) {
       return NextResponse.json(
         { error: "Le panier est vide" },
@@ -17,14 +17,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Créer les line items pour Stripe sans les images
+    // Créer les line items pour Stripe avec metadata
     const lineItems = items.map((item: CartItem) => ({
       price_data: {
         currency: "eur",
         product_data: {
           name: item.name,
           description: item.description || undefined,
-          // Ne pas inclure les images pour éviter l'erreur
+          metadata: {
+            productId: item.id, // Important pour le webhook
+          },
         },
         unit_amount: Math.round(item.price * 100),
       },
@@ -42,7 +44,11 @@ export async function POST(req: NextRequest) {
       success_url: `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/cart`,
       metadata: {
-        userId,
+        userId, // Important pour le webhook
+      },
+      // Optionnel: Collecter l'adresse de livraison
+      shipping_address_collection: {
+        allowed_countries: ["FR", "BE", "CH", "LU"], // Ajustez selon vos besoins
       },
     });
 

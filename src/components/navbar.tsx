@@ -1,12 +1,12 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { usePathname } from "next/navigation"
-import { ShoppingCart, User, Menu, LogOut, Phone } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { useAuth } from "@/lib/firebase/auth"
-import { useCart } from "@/lib/hooks/use-cart"
-import { useState } from "react"
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { ShoppingCart, User, Menu, LogOut, Phone } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/lib/firebase/auth";
+import { useCart } from "@/lib/hooks/use-cart";
+import { useState } from "react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,15 +14,16 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Badge } from "@/components/ui/badge"
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
+} from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Navbar() {
-  const { user, signOut } = useAuth()
-  const { items } = useCart()
-  const pathname = usePathname()
-  const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const { user, signOut, loading } = useAuth();
+  const { items } = useCart();
+  const pathname = usePathname();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const routes = [
     {
@@ -40,9 +41,9 @@ export default function Navbar() {
       label: "À propos",
       active: pathname === "/about",
     },
-  ]
+  ];
 
-  const itemCount = items.length
+  const itemCount = items.length;
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -79,7 +80,10 @@ export default function Navbar() {
             </Button>
           </Link>
 
-          {user ? (
+          {loading ? (
+            // Afficher un skeleton pendant le chargement
+            <Skeleton className="h-10 w-10 rounded-md" />
+          ) : user ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="icon">
@@ -128,9 +132,12 @@ export default function Navbar() {
                     {route.label}
                   </Link>
                 ))}
-                {!user && (
+                {!loading && !user && (
                   <Button asChild variant="default" className="mt-4">
-                    <Link href="/auth/login" onClick={() => setIsMenuOpen(false)}>
+                    <Link
+                      href="/auth/login"
+                      onClick={() => setIsMenuOpen(false)}
+                    >
                       Connexion
                     </Link>
                   </Button>
@@ -141,5 +148,5 @@ export default function Navbar() {
         </div>
       </div>
     </header>
-  )
+  );
 }

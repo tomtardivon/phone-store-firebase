@@ -42,7 +42,11 @@ export default function CartPage() {
 
     try {
       setIsLoading(true);
-      const sessionUrl = await createCheckoutSession(items, user.uid);
+      const sessionUrl = await createCheckoutSession(
+        items,
+        user.uid,
+        user.email ?? undefined
+      );
       router.push(sessionUrl);
     } catch (error) {
       console.error("Error creating checkout session:", error);

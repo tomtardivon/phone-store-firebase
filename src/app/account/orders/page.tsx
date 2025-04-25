@@ -1,45 +1,57 @@
-"use client"
+"use client";
 
-import { useEffect, useState } from "react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { ShoppingBag, ArrowRight } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { useAuth } from "@/lib/firebase/auth"
-import { getUserOrders } from "@/lib/firebase/firestore"
-import type { Order } from "@/lib/types"
-import { formatDate } from "@/lib/utils"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Badge } from "@/components/ui/badge"
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { ShoppingBag, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { useAuth } from "@/lib/firebase/auth";
+import { getUserOrders } from "@/lib/firebase/firestore";
+import type { Order } from "@/lib/types";
+import { formatDate } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 
 export default function OrdersPage() {
-  const { user, loading: authLoading } = useAuth()
-  const router = useRouter()
-  const [orders, setOrders] = useState<Order[]>([])
-  const [loading, setLoading] = useState(true)
+  const { user, loading: authLoading } = useAuth();
+  const router = useRouter();
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (authLoading) return
+    if (authLoading) return;
 
     if (!user) {
-      router.push("/auth/login?redirect=/account/orders")
-      return
+      router.push("/auth/login?redirect=/account/orders");
+      return;
     }
 
     const fetchOrders = async () => {
       try {
-        const userOrders = await getUserOrders(user.uid)
-        setOrders(userOrders)
+        setLoading(true);
+        const userOrders = await getUserOrders(user.uid);
+        console.log("Fetched orders:", userOrders); // Debug log
+        setOrders(userOrders);
+        setError(null);
       } catch (error) {
-        console.error("Error fetching orders:", error)
+        console.error("Error fetching orders:", error);
+        setError("Impossible de charger vos commandes");
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchOrders()
-  }, [user, authLoading, router])
+    fetchOrders();
+  }, [user, authLoading, router]);
 
   if (authLoading || loading) {
     return (
@@ -63,7 +75,21 @@ export default function OrdersPage() {
           ))}
         </div>
       </div>
-    )
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="container mx-auto px-4 py-16 text-center">
+        <div className="max-w-md mx-auto">
+          <h1 className="text-2xl font-bold mb-2">Erreur</h1>
+          <p className="text-muted-foreground mb-6">{error}</p>
+          <Button variant="outline" onClick={() => router.push("/")}>
+            Retour à l'accueil
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   if (orders.length === 0) {
@@ -72,13 +98,15 @@ export default function OrdersPage() {
         <div className="max-w-md mx-auto">
           <ShoppingBag className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
           <h1 className="text-2xl font-bold mb-2">Aucune commande</h1>
-          <p className="text-muted-foreground mb-6">Vous n'avez pas encore passé de commande</p>
+          <p className="text-muted-foreground mb-6">
+            Vous n'avez pas encore passé de commande
+          </p>
           <Button asChild>
             <Link href="/products">Découvrir nos produits</Link>
           </Button>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -90,10 +118,16 @@ export default function OrdersPage() {
             <CardHeader>
               <div className="flex justify-between items-start">
                 <div>
-                  <CardTitle className="text-lg">Commande #{order.id?.substring(0, 8)}</CardTitle>
-                  <CardDescription>Passée le {formatDate(order.createdAt)}</CardDescription>
+                  <CardTitle className="text-lg">
+                    Commande #{order.id?.substring(0, 8)}
+                  </CardTitle>
+                  <CardDescription>
+                    Passée le {formatDate(order.createdAt)}
+                  </CardDescription>
                 </div>
-                <Badge variant={order.status === "delivered" ? "default" : "outline"}>
+                <Badge
+                  variant={order.status === "delivered" ? "default" : "outline"}
+                >
                   {order.status === "paid" && "Payée"}
                   {order.status === "processing" && "En traitement"}
                   {order.status === "shipped" && "Expédiée"}
@@ -104,7 +138,8 @@ export default function OrdersPage() {
             <CardContent>
               <div className="space-y-2">
                 <p className="text-sm">
-                  {order.items.length} article{order.items.length > 1 ? "s" : ""}
+                  {order.items.length} article
+                  {order.items.length > 1 ? "s" : ""}
                 </p>
                 <p className="font-medium">Total: {order.total.toFixed(2)} €</p>
               </div>
@@ -121,5 +156,5 @@ export default function OrdersPage() {
         ))}
       </div>
     </div>
-  )
+  );
 }
