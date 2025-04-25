@@ -43,18 +43,18 @@ export default function OrderDetailPage() {
       try {
         setLoading(true);
         const orderData = await getOrderById(orderId);
-        
+
         if (!orderData) {
           setError("Commande non trouvée");
           return;
         }
-        
+
         // Vérifier que la commande appartient à l'utilisateur connecté
         if (orderData.userId !== user.uid) {
           setError("Vous n'avez pas accès à cette commande");
           return;
         }
-        
+
         setOrder(orderData);
         setError(null);
       } catch (error) {
@@ -142,7 +142,10 @@ export default function OrderDetailPage() {
         <div className="max-w-md mx-auto">
           <h1 className="text-2xl font-bold mb-2">Erreur</h1>
           <p className="text-muted-foreground mb-6">{error}</p>
-          <Button variant="outline" onClick={() => router.push("/account/orders")}>
+          <Button
+            variant="outline"
+            onClick={() => router.push("/account/orders")}
+          >
             Retour aux commandes
           </Button>
         </div>
@@ -200,14 +203,15 @@ export default function OrderDetailPage() {
                 Méthode: Carte bancaire
               </p>
             </div>
-            
+
             {order.shippingAddress && (
               <div>
                 <h3 className="font-semibold mb-2">Adresse de livraison</h3>
                 <p className="text-sm">{order.shippingAddress.name}</p>
                 <p className="text-sm">{order.shippingAddress.address}</p>
                 <p className="text-sm">
-                  {order.shippingAddress.postalCode} {order.shippingAddress.city}
+                  {order.shippingAddress.postalCode}{" "}
+                  {order.shippingAddress.city}
                 </p>
                 <p className="text-sm">{order.shippingAddress.country}</p>
               </div>
@@ -221,10 +225,7 @@ export default function OrderDetailPage() {
             <h3 className="font-semibold mb-4">Articles commandés</h3>
             <div className="space-y-4">
               {order.items.map((item, index) => (
-                <div
-                  key={index}
-                  className="flex gap-4 p-4 border rounded-lg"
-                >
+                <div key={index} className="flex gap-4 p-4 border rounded-lg">
                   <div className="relative h-20 w-20 flex-shrink-0">
                     <Image
                       src={item.image || "/placeholder.svg"}
@@ -246,7 +247,9 @@ export default function OrderDetailPage() {
                     <div className="mt-1 flex items-center gap-2">
                       <p className="text-sm">Quantité: {item.quantity}</p>
                       <span className="text-muted-foreground">•</span>
-                      <p className="text-sm">{item.price.toFixed(2)} € l'unité</p>
+                      <p className="text-sm">
+                        {item.price.toFixed(2)} € l'unité
+                      </p>
                     </div>
                   </div>
                   <div className="text-right">
@@ -299,13 +302,17 @@ export default function OrderDetailPage() {
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-start gap-4">
-                    <div className={`flex h-8 w-8 items-center justify-center rounded-full ${
-                      ["processing", "shipped", "delivered"].includes(order.status)
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-muted-foreground"
-                    }`}>
+                    <div
+                      className={`flex h-8 w-8 items-center justify-center rounded-full ${
+                        ["processing", "shipped", "delivered"].includes(
+                          order.status
+                        )
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-muted-foreground"
+                      }`}
+                    >
                       <Package className="h-4 w-4" />
                     </div>
                     <div>
@@ -315,13 +322,15 @@ export default function OrderDetailPage() {
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-start gap-4">
-                    <div className={`flex h-8 w-8 items-center justify-center rounded-full ${
-                      ["shipped", "delivered"].includes(order.status)
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted text-muted-foreground"
-                    }`}>
+                    <div
+                      className={`flex h-8 w-8 items-center justify-center rounded-full ${
+                        ["shipped", "delivered"].includes(order.status)
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-muted text-muted-foreground"
+                      }`}
+                    >
                       <Truck className="h-4 w-4" />
                     </div>
                     <div>
