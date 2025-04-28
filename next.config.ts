@@ -10,15 +10,20 @@ const nextConfig = {
   images: {
     remotePatterns: [
       {
-        protocol: 'https',
-        hostname: '**',
+        protocol: "https",
+        hostname: "**",
       },
     ],
-    unoptimized: true,
+    // Activer les optimisations d'image au lieu de "unoptimized: true"
+    unoptimized: false,
+    formats: ["image/webp"],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
+    // Définir des tailles spécifiques pour les produits
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
   },
   // Optimisations de compilation
   compiler: {
-    removeConsole: process.env.NODE_ENV === 'production',
+    removeConsole: process.env.NODE_ENV === "production",
   },
   eslint: {
     ignoreDuringBuilds: true,

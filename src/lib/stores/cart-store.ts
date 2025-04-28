@@ -1,6 +1,6 @@
 // Exemple de ce que pourrait être votre cart store
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
 import type { CartItem } from "@/lib/types";
 
 interface CartStore {
