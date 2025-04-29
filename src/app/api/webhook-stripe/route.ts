@@ -4,6 +4,9 @@ import Stripe from "stripe";
 import { adminDb } from "@/lib/firebase/admin";
 import type { CartItem } from "@/lib/types";
 
+// ⚠️ WEBHOOK TEMPORAIREMENT DÉSACTIVÉ - UTILISE L'EXTENSION FIREBASE STRIPE ⚠️
+const WEBHOOK_DISABLED = true; // Mettre à false pour réactiver
+
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2023-10-16",
 });
@@ -11,6 +14,21 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
 export async function POST(req: NextRequest) {
+  // ⚠️ Désactivation temporaire du webhook, redirige vers extension Firebase
+  if (WEBHOOK_DISABLED) {
+    console.log(
+      "⚠️ Webhook désactivé - Utilisation de l'extension Firebase Stripe"
+    );
+    return NextResponse.json(
+      {
+        status: "disabled",
+        message:
+          "Ce webhook est temporairement désactivé. Les paiements sont traités par l'extension Firebase Stripe.",
+      },
+      { status: 200 }
+    );
+  }
+
   if (!adminDb) {
     return NextResponse.json(
       { error: "Firebase Admin not initialized" },

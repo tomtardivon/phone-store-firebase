@@ -1,3 +1,5 @@
+// src/lib/stripe/checkout.ts
+import { createStripePayment } from "./run-payments";
 import type { CartItem } from "@/lib/types";
 
 export async function createCheckoutSession(
@@ -6,20 +8,12 @@ export async function createCheckoutSession(
   userEmail?: string
 ): Promise<string> {
   try {
-    const response = await fetch("/api/checkout", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ items, userId, userEmail }),
+    // Utiliser la nouvelle fonction qui utilise l'extension Firebase
+    const sessionUrl = await createStripePayment(userId, items, {
+      userEmail: userEmail || "",
     });
 
-    if (!response.ok) {
-      throw new Error("Erreur lors de la création de la session de paiement");
-    }
-
-    const data = await response.json();
-    return data.url;
+    return sessionUrl;
   } catch (error) {
     console.error("Error creating checkout session:", error);
     throw error;
