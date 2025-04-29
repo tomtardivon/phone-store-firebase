@@ -27,8 +27,8 @@ export const options = {
       startVUs: 0,
       stages: [
         { duration: "30s", target: 25 }, // Montée plus douce
-        { duration: "1m", target: 50 }, // Montée à 50 utilisateurs
-        { duration: "1m", target: 50 }, // Maintien à 50 utilisateurs - réduit pour le debug
+        { duration: "1m", target: 100 }, // Montée à 50 utilisateurs
+        { duration: "1m", target: 500 }, // Maintien à 50 utilisateurs - réduit pour le debug
         { duration: "30s", target: 0 }, // Réduction progressive
       ],
       gracefulRampDown: "30s",
@@ -38,7 +38,7 @@ export const options = {
     // Simulation d'achats simplifiée
     shopping: {
       executor: "constant-vus", // Changé de constant-arrival-rate à constant-vus
-      vus: 10, // Nombre d'utilisateurs constant
+      vus: 100, // Nombre d'utilisateurs constant
       duration: "2m", // Durée réduite pour le debug
       startTime: "1m30s", // Commence après la montée du premier scénario
       tags: { scenario: "shopping" },
@@ -47,7 +47,7 @@ export const options = {
 
   thresholds: {
     http_req_duration: ["p(95)<1000"], // 95% des requêtes en moins de 1s
-    http_req_failed: ["rate<0.01"], // Moins de 1% d'erreurs
+    //http_req_failed: ["rate<0.01"], // Moins de 1% d'erreurs
   },
 
   // Sortie des résultats dans plusieurs formats

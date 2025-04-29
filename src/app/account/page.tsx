@@ -24,6 +24,7 @@ import { useAuth } from "@/lib/firebase/auth";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { EditProfileModal } from "@/components/edit-profile-modal";
+import { PasswordChangeModal } from "@/components/password-change-modal";
 
 export default function AccountPage() {
   const { user, signOut, loading: authLoading } = useAuth();
@@ -223,6 +224,7 @@ export default function AccountPage() {
                   </Link>
                 </Button>
                 <EditProfileModal user={user} />
+                <PasswordChangeModal user={user} />
               </div>
             </CardContent>
           </Card>
