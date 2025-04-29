@@ -1,8 +1,10 @@
-// src/lib/stripe/run-payments.ts (nouveau fichier)
 import {
   collection,
   addDoc,
+  onSnapshot,
+  doc,
   getDoc,
+  setDoc,
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase/db";
@@ -12,61 +14,68 @@ export async function createStripePayment(
   userId: string,
   items: CartItem[],
   metadata: Record<string, string> = {}
-) {
-  try {
-    // Comme vous avez activé la synchronisation, pas besoin de vérifier si le client existe
+): Promise<string> {
+  console.log("⚠️ Début de createStripePayment", { userId, items });
 
-    // Créer le paiement
-    const lineItems = items.map((item) => ({
-      quantity: item.quantity,
-      price_data: {
-        currency: "eur",
-        unit_amount: Math.round(item.price * 100),
-        product_data: {
-          name: item.name,
-          description: item.description || "",
-          images: item.image ? [item.image] : [],
-        },
-      },
-    }));
+  return new Promise((resolve, reject) => {
+    console.log("⚠️ Création du document checkout_session");
 
-    // Ajouter le paiement à la collection payments (gérée par l'extension)
-    const paymentRef = await addDoc(collection(db, "payments"), {
-      customerId: userId,
-      amount:
-        items.reduce((total, item) => total + item.price * item.quantity, 0) *
-        100,
-      currency: "eur",
-      payment_method_types: ["card"],
-      mode: "payment",
-      status: "initial",
-      line_items: lineItems,
-      metadata: {
-        ...metadata,
-        userId,
-      },
-      success_url: `${window.location.origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${window.location.origin}/cart`,
-    });
+    // Vérifions d'abord si le document customer existe
+    const customerRef = doc(db, "customers", userId);
+    getDoc(customerRef)
+      .then((customerSnap) => {
+        console.log("⚠️ Customer existe?", customerSnap.exists());
 
-    // Attendre que l'extension mette à jour le document avec l'URL de checkout
-    let attempts = 0;
-    while (attempts < 5) {
-      await new Promise((resolve) => setTimeout(resolve, 500));
+        if (!customerSnap.exists()) {
+          console.log("⚠️ Création du document customer");
+          // Créons-le explicitement
+          setDoc(customerRef, {
+            email: metadata.userEmail || "customer@example.com",
+            created: serverTimestamp(),
+          }).then(() => console.log("⚠️ Customer créé"));
+        }
 
-      const updatedPaymentSnap = await getDoc(paymentRef);
-      const paymentData = updatedPaymentSnap.data();
+        const lineItems = items.map((item) => ({
+          price: "price_1RJDfW4Np321iAhFloWoVbA2", // Votre ID de prix
+          quantity: item.quantity,
+        }));
 
-      if (paymentData?.url) {
-        return paymentData.url;
-      }
+        console.log("⚠️ Line items:", lineItems);
 
-      attempts++;
-    }
+        addDoc(collection(db, "customers", userId, "checkout_sessions"), {
+          mode: "payment",
+          line_items: lineItems,
+          success_url: `${window.location.origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+          cancel_url: `${window.location.origin}/cart`,
+        })
+          .then((docRef) => {
+            console.log("⚠️ Checkout session créée:", docRef.id);
 
-    throw new Error("Timeout waiting for payment URL");
-  } catch (error) {
-    console.error("Error creating Stripe payment:", error);
-    throw error;
-  }
+            const unsubscribe = onSnapshot(docRef, (snap) => {
+              const data = snap.data();
+              console.log("⚠️ Session data:", data);
+
+              if (data?.url) {
+                console.log("⚠️ URL trouvée:", data.url);
+                unsubscribe();
+                resolve(data.url);
+              }
+            });
+
+            setTimeout(() => {
+              console.log("⚠️ Timeout déclenché après 15s");
+              unsubscribe();
+              reject(new Error("Timeout waiting for payment URL"));
+            }, 5000);
+          })
+          .catch((error) => {
+            console.error("⚠️ Erreur lors de la création:", error);
+            reject(error);
+          });
+      })
+      .catch((error) => {
+        console.error("⚠️ Erreur lors de la vérification du customer:", error);
+        reject(error);
+      });
+  });
 }
