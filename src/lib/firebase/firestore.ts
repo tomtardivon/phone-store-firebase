@@ -64,8 +64,8 @@ export async function saveOrder(orderData: Omit<Order, "id">): Promise<string> {
 // Récupérer les commandes d'un utilisateur
 export async function getUserOrders(userId: string): Promise<Order[]> {
   try {
-    // Essayer les deux variations (userId et userID) pour la compatibilité
-    let querySnapshot = await getDocs(
+    // Avec index (une fois qu'il est créé)
+    const querySnapshot = await getDocs(
       query(
         collection(db, "orders"),
         where("userId", "==", userId),
@@ -73,28 +73,20 @@ export async function getUserOrders(userId: string): Promise<Order[]> {
       )
     );
 
-    if (querySnapshot.empty) {
-      // Si aucun résultat, essayer avec "userID" (majuscule)
-      querySnapshot = await getDocs(
-        query(
-          collection(db, "orders"),
-          where("userID", "==", userId),
-          orderBy("createdAt", "desc")
-        )
-      );
-    }
-
     const orders: Order[] = [];
-
     querySnapshot.forEach((doc) => {
       const data = doc.data();
       orders.push({
         id: doc.id,
-        userId: data.userId || data.userID,
+        userId: data.userId,
         items: data.items,
         total: data.total,
         status: data.status,
-        paymentId: data.paymentId || data.paymentID,
+        paymentId: data.paymentId,
+        shippingAddress: data.shippingAddress || null,
+        phone: data.phone || null,
+        email: data.email || null,
+        billingAddress: data.billingAddress || null,
         createdAt: data.createdAt?.toDate() || new Date(data.createdAt),
       });
     });
@@ -102,58 +94,41 @@ export async function getUserOrders(userId: string): Promise<Order[]> {
     return orders;
   } catch (error) {
     console.error("Error getting user orders:", error);
-    // Si l'erreur est due à l'absence d'index, essayer sans orderBy
+
+    // SOLUTION TEMPORAIRE: Sans orderBy (en attendant la création de l'index)
     try {
       const querySnapshot = await getDocs(
         query(collection(db, "orders"), where("userId", "==", userId))
       );
-
-      if (querySnapshot.empty) {
-        // Si aucun résultat, essayer avec "userID" (majuscule)
-        const querySnapshot2 = await getDocs(
-          query(collection(db, "orders"), where("userID", "==", userId))
-        );
-
-        const orders: Order[] = [];
-        querySnapshot2.forEach((doc) => {
-          const data = doc.data();
-          orders.push({
-            id: doc.id,
-            userId: data.userId || data.userID,
-            items: data.items,
-            total: data.total,
-            status: data.status,
-            paymentId: data.paymentId || data.paymentID,
-            createdAt: data.createdAt?.toDate() || new Date(data.createdAt),
-          });
-        });
-
-        // Trier manuellement par date
-        return orders.sort(
-          (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
-        );
-      }
 
       const orders: Order[] = [];
       querySnapshot.forEach((doc) => {
         const data = doc.data();
         orders.push({
           id: doc.id,
-          userId: data.userId || data.userID,
+          userId: data.userId,
           items: data.items,
           total: data.total,
           status: data.status,
-          paymentId: data.paymentId || data.paymentID,
+          paymentId: data.paymentId,
+          shippingAddress: data.shippingAddress || null,
+          phone: data.phone || null,
+          email: data.email || null,
+          billingAddress: data.billingAddress || null,
           createdAt: data.createdAt?.toDate() || new Date(data.createdAt),
         });
       });
 
-      // Trier manuellement par date
-      return orders.sort(
-        (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
-      );
+      // Tri manuel (en attendant l'index)
+      return orders.sort((a, b) => {
+        const dateA =
+          a.createdAt instanceof Date ? a.createdAt : a.createdAt.toDate();
+        const dateB =
+          b.createdAt instanceof Date ? b.createdAt : b.createdAt.toDate();
+        return dateB.getTime() - dateA.getTime();
+      });
     } catch (fallbackError) {
-      console.error("Error getting user orders (fallback):", fallbackError);
+      console.error("Error with fallback:", fallbackError);
       throw fallbackError;
     }
   }
@@ -176,6 +151,10 @@ export async function getOrderById(orderId: string): Promise<Order | null> {
       total: data.total,
       status: data.status,
       paymentId: data.paymentId,
+      shippingAddress: data.shippingAddress || null,
+      phone: data.phone || null,
+      email: data.email || null,
+      billingAddress: data.billingAddress || null,
       createdAt: data.createdAt?.toDate() || new Date(),
     };
   } catch (error) {

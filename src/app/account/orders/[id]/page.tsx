@@ -86,15 +86,15 @@ export default function OrderDetailPage() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "paid":
-        return <Package className="h-4 w-4" />;
+        return <Package className="w-4 h-4" />;
       case "processing":
-        return <Package className="h-4 w-4" />;
+        return <Package className="w-4 h-4" />;
       case "shipped":
-        return <Truck className="h-4 w-4" />;
+        return <Truck className="w-4 h-4" />;
       case "delivered":
-        return <CheckCircle2 className="h-4 w-4" />;
+        return <CheckCircle2 className="w-4 h-4" />;
       default:
-        return <Package className="h-4 w-4" />;
+        return <Package className="w-4 h-4" />;
     }
   };
 
@@ -115,21 +115,21 @@ export default function OrderDetailPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="container px-4 py-8 mx-auto">
         <div className="mb-6">
-          <Skeleton className="h-8 w-48" />
+          <Skeleton className="w-48 h-8" />
         </div>
         <Card>
           <CardHeader>
-            <Skeleton className="h-6 w-64" />
-            <Skeleton className="h-4 w-48" />
+            <Skeleton className="w-64 h-6" />
+            <Skeleton className="w-48 h-4" />
           </CardHeader>
           <CardContent className="space-y-8">
             <div className="grid gap-4 md:grid-cols-2">
-              <Skeleton className="h-32 w-full" />
-              <Skeleton className="h-32 w-full" />
+              <Skeleton className="w-full h-32" />
+              <Skeleton className="w-full h-32" />
             </div>
-            <Skeleton className="h-64 w-full" />
+            <Skeleton className="w-full h-64" />
           </CardContent>
         </Card>
       </div>
@@ -138,10 +138,10 @@ export default function OrderDetailPage() {
 
   if (error) {
     return (
-      <div className="container mx-auto px-4 py-16 text-center">
+      <div className="container px-4 py-16 mx-auto text-center">
         <div className="max-w-md mx-auto">
-          <h1 className="text-2xl font-bold mb-2">Erreur</h1>
-          <p className="text-muted-foreground mb-6">{error}</p>
+          <h1 className="mb-2 text-2xl font-bold">Erreur</h1>
+          <p className="mb-6 text-muted-foreground">{error}</p>
           <Button
             variant="outline"
             onClick={() => router.push("/account/orders")}
@@ -158,14 +158,14 @@ export default function OrderDetailPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container px-4 py-8 mx-auto">
       <div className="mb-6">
         <Button
           variant="ghost"
           onClick={() => router.push("/account/orders")}
           className="mb-4"
         >
-          <ArrowLeft className="mr-2 h-4 w-4" />
+          <ArrowLeft className="w-4 h-4 mr-2" />
           Retour aux commandes
         </Button>
         <h1 className="text-2xl font-bold">Détails de la commande</h1>
@@ -179,12 +179,17 @@ export default function OrderDetailPage() {
                 Commande #{order.id?.substring(0, 8)}
               </CardTitle>
               <CardDescription>
-                Passée le {formatDate(order.createdAt)}
+                Passée le{" "}
+                {formatDate(
+                  order.createdAt instanceof Date
+                    ? order.createdAt
+                    : order.createdAt.toDate()
+                )}
               </CardDescription>
             </div>
             <Badge
               variant={getStatusBadgeVariant(order.status)}
-              className="w-fit flex items-center gap-1"
+              className="flex items-center gap-1 w-fit"
             >
               {getStatusIcon(order.status)}
               {getStatusText(order.status)}
@@ -195,7 +200,7 @@ export default function OrderDetailPage() {
           {/* Informations de la commande */}
           <div className="grid gap-4 md:grid-cols-2">
             <div>
-              <h3 className="font-semibold mb-2">Informations de paiement</h3>
+              <h3 className="mb-2 font-semibold">Informations de paiement</h3>
               <p className="text-sm text-muted-foreground">
                 ID de paiement: {order.paymentId?.substring(0, 12)}...
               </p>
@@ -206,14 +211,22 @@ export default function OrderDetailPage() {
 
             {order.shippingAddress && (
               <div>
-                <h3 className="font-semibold mb-2">Adresse de livraison</h3>
+                <h3 className="mb-2 font-semibold">Adresse de livraison</h3>
                 <p className="text-sm">{order.shippingAddress.name}</p>
                 <p className="text-sm">{order.shippingAddress.address}</p>
+                {order.shippingAddress.addressLine2 && (
+                  <p className="text-sm">
+                    {order.shippingAddress.addressLine2}
+                  </p>
+                )}
                 <p className="text-sm">
                   {order.shippingAddress.postalCode}{" "}
                   {order.shippingAddress.city}
                 </p>
                 <p className="text-sm">{order.shippingAddress.country}</p>
+                {order.phone && (
+                  <p className="mt-2 text-sm">Tél: {order.phone}</p>
+                )}
               </div>
             )}
           </div>
@@ -222,11 +235,11 @@ export default function OrderDetailPage() {
 
           {/* Articles de la commande */}
           <div>
-            <h3 className="font-semibold mb-4">Articles commandés</h3>
+            <h3 className="mb-4 font-semibold">Articles commandés</h3>
             <div className="space-y-4">
               {order.items.map((item, index) => (
                 <div key={index} className="flex gap-4 p-4 border rounded-lg">
-                  <div className="relative h-20 w-20 flex-shrink-0">
+                  <div className="relative flex-shrink-0 w-20 h-20">
                     <Image
                       src={item.image || "/placeholder.svg"}
                       alt={item.name}
@@ -241,10 +254,10 @@ export default function OrderDetailPage() {
                     >
                       {item.name}
                     </Link>
-                    <p className="text-sm text-muted-foreground truncate">
+                    <p className="text-sm truncate text-muted-foreground">
                       {item.description}
                     </p>
-                    <div className="mt-1 flex items-center gap-2">
+                    <div className="flex items-center gap-2 mt-1">
                       <p className="text-sm">Quantité: {item.quantity}</p>
                       <span className="text-muted-foreground">•</span>
                       <p className="text-sm">
@@ -266,7 +279,7 @@ export default function OrderDetailPage() {
 
           {/* Résumé */}
           <div>
-            <h3 className="font-semibold mb-4">Résumé</h3>
+            <h3 className="mb-4 font-semibold">Résumé</h3>
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span>Sous-total</span>
@@ -289,11 +302,11 @@ export default function OrderDetailPage() {
             <>
               <Separator />
               <div>
-                <h3 className="font-semibold mb-4">Suivi de la commande</h3>
+                <h3 className="mb-4 font-semibold">Suivi de la commande</h3>
                 <div className="space-y-4">
                   <div className="flex items-start gap-4">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground">
-                      <CheckCircle2 className="h-4 w-4" />
+                    <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary text-primary-foreground">
+                      <CheckCircle2 className="w-4 h-4" />
                     </div>
                     <div>
                       <p className="font-medium">Commande confirmée</p>
@@ -313,7 +326,7 @@ export default function OrderDetailPage() {
                           : "bg-muted text-muted-foreground"
                       }`}
                     >
-                      <Package className="h-4 w-4" />
+                      <Package className="w-4 h-4" />
                     </div>
                     <div>
                       <p className="font-medium">En préparation</p>
@@ -331,7 +344,7 @@ export default function OrderDetailPage() {
                           : "bg-muted text-muted-foreground"
                       }`}
                     >
-                      <Truck className="h-4 w-4" />
+                      <Truck className="w-4 h-4" />
                     </div>
                     <div>
                       <p className="font-medium">Expédiée</p>
