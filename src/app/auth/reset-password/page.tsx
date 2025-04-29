@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useEffect, Suspense } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { confirmPasswordReset, verifyPasswordResetCode } from "firebase/auth";
 import { getAuth } from "@/lib/firebase/auth";
@@ -44,7 +44,8 @@ const resetSchema = z
     path: ["confirmPassword"],
   });
 
-export default function ResetPasswordPage() {
+// Composant qui utilise useSearchParams, déplacé dans un sous-composant
+function ResetPasswordForm() {
   const [isValidToken, setIsValidToken] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(true);
   const [success, setSuccess] = useState(false);
@@ -53,9 +54,11 @@ export default function ResetPasswordPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { toast } = useToast();
 
+  // Importation et utilisation de useSearchParams dans ce composant
+  const { useSearchParams } = require("next/navigation");
+  const searchParams = useSearchParams();
   const oobCode = searchParams.get("oobCode");
 
   const form = useForm({
@@ -291,5 +294,28 @@ export default function ResetPasswordPage() {
         </Form>
       </Card>
     </div>
+  );
+}
+
+// Composant principal avec Suspense boundary
+export default function ResetPasswordPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="container mx-auto px-4 py-16 flex justify-center">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle>Réinitialisation du mot de passe</CardTitle>
+              <CardDescription>Chargement...</CardDescription>
+            </CardHeader>
+            <CardContent className="flex justify-center p-8">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </CardContent>
+          </Card>
+        </div>
+      }
+    >
+      <ResetPasswordForm />
+    </Suspense>
   );
 }
