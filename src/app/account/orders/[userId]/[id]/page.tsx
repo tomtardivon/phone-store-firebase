@@ -36,13 +36,21 @@ export default function OrderDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  const userId = params.userId as string;
   const orderId = params.id as string;
 
   useEffect(() => {
     if (authLoading) return;
 
     if (!user) {
-      router.push(`/auth/login?redirect=/account/orders/${orderId}`);
+      router.push(`/auth/login?redirect=/account/orders/${userId}/${orderId}`);
+      return;
+    }
+
+    // Vérifier que l'utilisateur ne tente pas d'accéder aux commandes d'un autre utilisateur
+    if (user.uid !== userId) {
+      setError("Vous n'avez pas accès à cette commande");
+      setLoading(false);
       return;
     }
 
@@ -53,12 +61,6 @@ export default function OrderDetailPage() {
 
         if (!orderData) {
           setError("Commande non trouvée");
-          return;
-        }
-
-        // Vérifier que la commande appartient à l'utilisateur connecté
-        if (orderData.userId !== user.uid) {
-          setError("Vous n'avez pas accès à cette commande");
           return;
         }
 
@@ -73,7 +75,7 @@ export default function OrderDetailPage() {
     };
 
     fetchOrder();
-  }, [user, authLoading, router, orderId]);
+  }, [user, authLoading, router, userId, orderId]);
 
   // Formater le prix
   const formatPrice = (price: number) => {
@@ -176,6 +178,12 @@ export default function OrderDetailPage() {
   const displayOrderNumber =
     order.orderNumber || `#${order.id?.substring(0, 8)}`;
 
+  // Convertir les dates si nécessaire
+  const orderDate =
+    order.createdAt instanceof Date
+      ? order.createdAt
+      : order.createdAt.toDate();
+
   return (
     <div className="container px-4 py-8 mx-auto">
       <div className="mb-6">
@@ -198,12 +206,7 @@ export default function OrderDetailPage() {
                 Commande {displayOrderNumber}
               </CardTitle>
               <CardDescription>
-                Passée le{" "}
-                {formatDate(
-                  order.createdAt instanceof Date
-                    ? order.createdAt
-                    : order.createdAt.toDate()
-                )}
+                Passée le {formatDate(orderDate)}
               </CardDescription>
             </div>
             <Badge
@@ -317,12 +320,7 @@ export default function OrderDetailPage() {
                     />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <Link
-                      href={`/products/${item.id}`}
-                      className="font-medium hover:underline"
-                    >
-                      {item.name}
-                    </Link>
+                    <h4 className="font-medium">{item.name}</h4>
                     <p className="text-sm truncate text-muted-foreground">
                       {item.description}
                     </p>

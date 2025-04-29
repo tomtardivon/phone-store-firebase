@@ -54,10 +54,10 @@ export default function OrdersPage() {
   }, [user, authLoading, router]);
 
   // Formater le prix
-  const formatPrice = (price: number) => {
+  const formatPrice = (price: number, currency = "EUR") => {
     return new Intl.NumberFormat("fr-FR", {
       style: "currency",
-      currency: "EUR",
+      currency: currency.toUpperCase(),
     }).format(price);
   };
 
@@ -156,7 +156,9 @@ export default function OrdersPage() {
                   {order.items.length} article
                   {order.items.length > 1 ? "s" : ""}
                 </p>
-                <p className="font-medium">Total: {formatPrice(order.total)}</p>
+                <p className="font-medium">
+                  Total: {formatPrice(order.total, order.currency)}
+                </p>
                 {order.phone && (
                   <p className="text-sm text-muted-foreground">
                     Tél: {order.phone}
@@ -166,7 +168,7 @@ export default function OrdersPage() {
             </CardContent>
             <CardFooter>
               <Button variant="outline" asChild>
-                <Link href={`/account/orders/${order.id}`}>
+                <Link href={`/account/orders/${user?.uid}/${order.id}`}>
                   Détails de la commande
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Link>

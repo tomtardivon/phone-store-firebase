@@ -11,6 +11,12 @@ import {
 import { db } from "@/lib/firebase/db";
 import type { CartItem } from "@/lib/types";
 
+/**
+ * Crée une session de paiement Stripe en utilisant l'extension Firebase
+ * Les données de commande seront accessibles via 'customers/{userId}/payments/{paymentId}'
+ * après un paiement réussi
+ */
+
 export async function createStripePayment(
   userId: string,
   items: CartItem[],
@@ -19,13 +25,13 @@ export async function createStripePayment(
   console.log("Creating Stripe payment", { userId, items });
 
   return new Promise((resolve, reject) => {
-    // Vérifions d'abord si le document customer existe
+    // Vérifier si le document customer existe
     const customerRef = doc(db, "customers", userId);
 
     getDoc(customerRef)
       .then((customerSnap) => {
         if (!customerSnap.exists()) {
-          // Créons-le explicitement
+          // Le créer explicitement si nécessaire
           return setDoc(customerRef, {
             email: metadata.userEmail || "",
             created: serverTimestamp(),
@@ -33,14 +39,15 @@ export async function createStripePayment(
         }
       })
       .then(() => {
-        // Convertir les produits en line_items en utilisant les données dynamiques
+        // Convertir les produits en line_items pour Stripe
         const line_items = items.map((item) => ({
           price_data: {
             currency: "eur",
             product_data: {
               name: item.name,
               description: item.description || undefined,
-              // Vous pouvez ajouter images[] si vous avez des images
+              // Ajouter des images si disponibles
+              images: item.image ? [item.image] : undefined,
               metadata: {
                 productId: item.id,
               },
@@ -52,13 +59,13 @@ export async function createStripePayment(
 
         console.log("Creating checkout session with line items", line_items);
 
-        // Créer la session de checkout
+        // Créer la session de checkout via l'extension Stripe
         return addDoc(
           collection(db, "customers", userId, "checkout_sessions"),
           {
             mode: "payment",
             line_items: line_items,
-            success_url: `${window.location.origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+            success_url: `${window.location.origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}&user_id=${userId}`,
             cancel_url: `${window.location.origin}/cart`,
             // Collecte de l'adresse de livraison
             shipping_address_collection: {
@@ -73,7 +80,7 @@ export async function createStripePayment(
                 "GB",
               ],
             },
-            // Options de livraison (force l'affichage du formulaire d'adresse)
+            // Options de livraison
             shipping_options: [
               {
                 shipping_rate_data: {
@@ -122,22 +129,32 @@ export async function createStripePayment(
             },
             // Collecte du nom pour carte bancaire
             payment_intent_data: {
-              setup_future_usage: "off_session", // Optionnel: permet de sauvegarder le moyen de paiement
+              // Ne pas enregistrer la carte pour usage futur
+              setup_future_usage: null,
+              // Permet de retrouver les informations plus facilement
+              metadata: {
+                userId: userId,
+                ...metadata,
+              },
             },
-            // Optionnel: informations sur le client
+            // Créer un nouveau client si nécessaire
             customer_creation: "always",
-            // Envoyer les métadonnées
+            // Métadonnées pour la session
             metadata: {
               userId: userId,
               ...metadata,
             },
+            // Active la page de confirmation de commande
+            allow_promotion_codes: true,
+            // Inclure les taxes automatiquement selon le pays
+            automatic_tax: { enabled: true },
           }
         );
       })
       .then((docRef) => {
         console.log("Checkout session document created:", docRef.id);
 
-        // Écouter les mises à jour du document
+        // Écouter les mises à jour du document pour obtenir l'URL
         const unsubscribe = onSnapshot(docRef, (snap) => {
           const data = snap.data();
           console.log("Session data update:", data);
@@ -155,7 +172,7 @@ export async function createStripePayment(
           }
         });
 
-        // Augmenter le timeout à 30 secondes pour donner plus de temps à l'extension
+        // Timeout en cas de problème
         setTimeout(() => {
           console.log("Timeout reached after 30s");
           unsubscribe();
@@ -164,7 +181,7 @@ export async function createStripePayment(
               "Timeout waiting for payment URL. Vérifiez que l'extension Stripe est correctement configurée."
             )
           );
-        }, 30000); // 30 secondes au lieu de 5
+        }, 30000);
       })
       .catch((error) => {
         console.error("Error creating checkout session:", error);

@@ -106,17 +106,17 @@ export default function AccountPage() {
 
   if (authLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
+      <div className="container px-4 py-8 mx-auto">
         <Card>
           <CardHeader>
-            <Skeleton className="h-8 w-48" />
-            <Skeleton className="h-4 w-64 mt-2" />
+            <Skeleton className="w-48 h-8" />
+            <Skeleton className="w-64 h-4 mt-2" />
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-4">
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-3/4" />
-              <Skeleton className="h-4 w-1/2" />
+              <Skeleton className="w-full h-4" />
+              <Skeleton className="w-3/4 h-4" />
+              <Skeleton className="w-1/2 h-4" />
             </div>
           </CardContent>
         </Card>
@@ -129,9 +129,9 @@ export default function AccountPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container px-4 py-8 mx-auto">
       <div className="mx-auto">
-        <h1 className="text-3xl font-bold mb-8">Mon compte</h1>
+        <h1 className="mb-8 text-3xl font-bold">Mon compte</h1>
 
         <div className="grid gap-6">
           {/* Profil Card */}
@@ -142,23 +142,23 @@ export default function AccountPage() {
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="flex items-center space-x-4">
-                <div className="h-20 w-20 rounded-full bg-primary/10 flex items-center justify-center">
+                <div className="flex items-center justify-center w-20 h-20 rounded-full bg-primary/10">
                   {user.photoURL ? (
                     <img
                       src={user.photoURL}
                       alt={user.displayName || "User"}
-                      className="h-20 w-20 rounded-full object-cover"
+                      className="object-cover w-20 h-20 rounded-full"
                     />
                   ) : (
-                    <User className="h-10 w-10 text-primary" />
+                    <User className="w-10 h-10 text-primary" />
                   )}
                 </div>
                 <div>
                   <h3 className="text-xl font-semibold">
                     {user.displayName || "Utilisateur"}
                   </h3>
-                  <p className="text-muted-foreground flex items-center gap-2">
-                    <Mail className="h-4 w-4" />
+                  <p className="flex items-center gap-2 text-muted-foreground">
+                    <Mail className="w-4 h-4" />
                     {user.email}
                   </p>
                 </div>
@@ -219,7 +219,7 @@ export default function AccountPage() {
                     href="/account/orders"
                     className="flex items-center gap-2"
                   >
-                    <ShoppingBag className="h-4 w-4" />
+                    <ShoppingBag className="w-4 h-4" />
                     Mes commandes
                   </Link>
                 </Button>
@@ -245,7 +245,7 @@ export default function AccountPage() {
                     paiement, voir vos factures et mettre à jour vos cartes
                     bancaires.
                   </p>
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="mt-1 text-xs text-muted-foreground">
                     Le portail client doit être activé dans votre dashboard
                     Stripe.
                   </p>
@@ -256,9 +256,9 @@ export default function AccountPage() {
                   className="flex items-center gap-2"
                 >
                   {isLoadingPortal ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin" />
                   ) : (
-                    <CreditCard className="h-4 w-4" />
+                    <CreditCard className="w-4 h-4" />
                   )}
                   {isLoadingPortal ? "Chargement..." : "Gérer les paiements"}
                 </Button>
@@ -287,7 +287,7 @@ export default function AccountPage() {
                   onClick={handleSignOut}
                   className="flex items-center gap-2"
                 >
-                  <LogOut className="h-4 w-4" />
+                  <LogOut className="w-4 h-4" />
                   Se déconnecter
                 </Button>
               </div>
