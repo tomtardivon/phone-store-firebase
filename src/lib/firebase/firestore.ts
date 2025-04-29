@@ -64,8 +64,7 @@ export async function saveOrder(orderData: Omit<Order, "id">): Promise<string> {
 // Récupérer les commandes d'un utilisateur
 export async function getUserOrders(userId: string): Promise<Order[]> {
   try {
-    // Avec index (une fois qu'il est créé)
-    const querySnapshot = await getDocs(
+    let querySnapshot = await getDocs(
       query(
         collection(db, "orders"),
         where("userId", "==", userId),
@@ -73,21 +72,43 @@ export async function getUserOrders(userId: string): Promise<Order[]> {
       )
     );
 
+    // Si aucun résultat, essayer avec "userID" (pour compatibilité)
+    if (querySnapshot.empty) {
+      querySnapshot = await getDocs(
+        query(
+          collection(db, "orders"),
+          where("userID", "==", userId),
+          orderBy("createdAt", "desc")
+        )
+      );
+    }
+
     const orders: Order[] = [];
+
     querySnapshot.forEach((doc) => {
       const data = doc.data();
+
+      // Formater correctement la date
+      const createdAt = data.createdAt?.toDate
+        ? data.createdAt.toDate()
+        : new Date(data.createdAt || Date.now());
+
       orders.push({
         id: doc.id,
-        userId: data.userId,
-        items: data.items,
-        total: data.total,
-        status: data.status,
-        paymentId: data.paymentId,
+        orderNumber: data.orderNumber || doc.id, // Utiliser l'ID de document formaté s'il existe
+        orderId: data.orderId,
+        userId: data.userId || data.userID,
+        items: data.items || [],
+        total: data.total || 0,
+        status: data.status || "paid",
+        paymentId: data.paymentId || data.stripePaymentId,
         shippingAddress: data.shippingAddress || null,
-        phone: data.phone || null,
-        email: data.email || null,
+        phone: data.phone || "",
+        email: data.email || "",
         billingAddress: data.billingAddress || null,
-        createdAt: data.createdAt?.toDate() || new Date(data.createdAt),
+        currency: data.currency || "eur",
+        createdAt: createdAt,
+        updatedAt: data.updatedAt?.toDate() || createdAt,
       });
     });
 
@@ -101,35 +122,49 @@ export async function getUserOrders(userId: string): Promise<Order[]> {
         query(collection(db, "orders"), where("userId", "==", userId))
       );
 
+      if (querySnapshot.empty) {
+        return [];
+      }
+
       const orders: Order[] = [];
       querySnapshot.forEach((doc) => {
         const data = doc.data();
+
+        // Formater correctement la date
+        const createdAt = data.createdAt?.toDate
+          ? data.createdAt.toDate()
+          : new Date(data.createdAt || Date.now());
+
         orders.push({
           id: doc.id,
-          userId: data.userId,
-          items: data.items,
-          total: data.total,
-          status: data.status,
-          paymentId: data.paymentId,
+          orderNumber: data.orderNumber || doc.id,
+          orderId: data.orderId,
+          userId: data.userId || data.userID,
+          items: data.items || [],
+          total: data.total || 0,
+          status: data.status || "paid",
+          paymentId: data.paymentId || data.stripePaymentId,
           shippingAddress: data.shippingAddress || null,
-          phone: data.phone || null,
-          email: data.email || null,
+          phone: data.phone || "",
+          email: data.email || "",
           billingAddress: data.billingAddress || null,
-          createdAt: data.createdAt?.toDate() || new Date(data.createdAt),
+          currency: data.currency || "eur",
+          createdAt: createdAt,
+          updatedAt: data.updatedAt?.toDate() || createdAt,
         });
       });
 
       // Tri manuel (en attendant l'index)
-      return orders.sort((a, b) => {
-        const dateA =
-          a.createdAt instanceof Date ? a.createdAt : a.createdAt.toDate();
-        const dateB =
-          b.createdAt instanceof Date ? b.createdAt : b.createdAt.toDate();
-        return dateB.getTime() - dateA.getTime();
-      });
+      return orders.sort(
+        (a, b) => {
+          const dateA = a.createdAt instanceof Date ? a.createdAt : a.createdAt.toDate();
+          const dateB = b.createdAt instanceof Date ? b.createdAt : b.createdAt.toDate();
+          return dateB.getTime() - dateA.getTime();
+        }
+      );
     } catch (fallbackError) {
       console.error("Error with fallback:", fallbackError);
-      throw fallbackError;
+      return [];
     }
   }
 }

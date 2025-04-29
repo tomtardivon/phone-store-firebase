@@ -2,6 +2,16 @@ const { onDocumentUpdated } = require("firebase-functions/v2/firestore");
 const admin = require("firebase-admin");
 admin.initializeApp();
 
+// Générer un ID de commande aléatoire
+function generateOrderId() {
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let result = "";
+  for (let i = 0; i < 8; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
 // Fonction pour les paiements Stripe
 exports.onPaymentSuccess = onDocumentUpdated(
   "payments/{paymentId}",
@@ -15,7 +25,6 @@ exports.onPaymentSuccess = onDocumentUpdated(
       paymentData?.status === "succeeded"
     ) {
       console.log(`Payment ${event.params.paymentId} succeeded!`);
-      console.log("Payment data:", JSON.stringify(paymentData, null, 2));
 
       // Récupérer l'ID utilisateur depuis les métadonnées
       const userId = paymentData.metadata?.userId;
@@ -25,48 +34,70 @@ exports.onPaymentSuccess = onDocumentUpdated(
         return null;
       }
 
+      // Générer un ID de commande lisible
+      const orderId = generateOrderId();
+
       // Extraire les informations d'adresse de livraison
-      const shippingAddress = paymentData.shipping
+      const shippingInfo = paymentData.shipping || {};
+      const shippingAddress = shippingInfo.address
         ? {
-            name: paymentData.shipping.name || "",
-            address: paymentData.shipping.address?.line1 || "",
-            addressLine2: paymentData.shipping.address?.line2 || "",
-            city: paymentData.shipping.address?.city || "",
-            state: paymentData.shipping.address?.state || "",
-            postalCode: paymentData.shipping.address?.postal_code || "",
-            country: paymentData.shipping.address?.country || "",
+            name: shippingInfo.name || "",
+            address: shippingInfo.address.line1 || "",
+            addressLine2: shippingInfo.address.line2 || "",
+            city: shippingInfo.address.city || "",
+            state: shippingInfo.address.state || "",
+            postalCode: shippingInfo.address.postal_code || "",
+            country: shippingInfo.address.country || "",
           }
         : null;
 
-      // Extraire le numéro de téléphone
-      const phone = paymentData.customer_details?.phone || "";
+      // Extraire les informations client
+      const customerDetails = paymentData.customer_details || {};
 
-      // Créer la commande dans Firestore avec adresse et téléphone
+      // Construire les items de la commande
+      const items = Array.isArray(paymentData.line_items?.data)
+        ? paymentData.line_items.data.map((item) => ({
+            id: item.price?.product || "",
+            name: item.description || "Produit",
+            price: (item.amount_total || 0) / 100 / (item.quantity || 1),
+            quantity: item.quantity || 1,
+            description: "",
+            image: "",
+          }))
+        : [];
+
+      // Si line_items n'est pas disponible, essayer avec items
+      const fallbackItems = Array.isArray(paymentData.items)
+        ? paymentData.items.map((item) => ({
+            id: item.id || "",
+            name: item.description || "Produit",
+            price: (item.amount_total || 0) / 100,
+            quantity: 1,
+            description: item.description || "",
+            image: "",
+          }))
+        : [];
+
+      // Créer la commande dans Firestore
       return admin
         .firestore()
         .collection("orders")
-        .doc()
+        .doc(`#${orderId}`)
         .set({
+          // Informations de la commande
+          orderId: orderId,
+          orderNumber: `#${orderId}`,
           userId: userId,
-          items: Array.isArray(paymentData.line_items?.data)
-            ? paymentData.line_items.data.map((item) => ({
-                id: item.price?.product || "",
-                name: item.description || "Produit",
-                price: (item.amount_total || 0) / 100 / (item.quantity || 1),
-                quantity: item.quantity || 1,
-                description: "",
-                image: "",
-              }))
-            : [],
-          total: (paymentData.amount_total || 0) / 100,
+          items: items.length > 0 ? items : fallbackItems,
+          total: (paymentData.amount_total || paymentData.amount || 0) / 100,
           status: "paid",
           paymentId: event.params.paymentId,
-          // Ajouter l'adresse de livraison si disponible
+
+          // Informations client
           shippingAddress: shippingAddress,
-          // Ajouter le numéro de téléphone si disponible
-          phone: phone,
-          // Ajouter l'email du client
-          email: paymentData.customer_details?.email || "",
+          phone: customerDetails.phone || "",
+          email: customerDetails.email || paymentData.receipt_email || "",
+
           // Informations de facturation
           billingAddress: paymentData.billing_details?.address
             ? {
@@ -79,20 +110,20 @@ exports.onPaymentSuccess = onDocumentUpdated(
                 country: paymentData.billing_details.address.country || "",
               }
             : null,
-          // Méthode de paiement utilisée
+
+          // Méta-données
           paymentMethod: paymentData.payment_method_details?.type || "",
+          currency: paymentData.currency || "eur",
+          stripePaymentId: event.params.paymentId,
+
           // Timestamps
           createdAt: admin.firestore.FieldValue.serverTimestamp(),
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         })
         .then((ref) => {
           console.log(
-            `Order ${ref.id} created for payment ${event.params.paymentId} with shipping info`
+            `Order #${orderId} created for payment ${event.params.paymentId}`
           );
-
-          // Envoyer éventuellement un email de confirmation
-          // sendOrderConfirmationEmail(userId, ref.id);
-
           return null;
         })
         .catch((error) => {

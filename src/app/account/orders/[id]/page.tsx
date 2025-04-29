@@ -4,7 +4,14 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowLeft, Package, Truck, CheckCircle2 } from "lucide-react";
+import {
+  ArrowLeft,
+  Package,
+  Truck,
+  CheckCircle2,
+  Phone,
+  Mail,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -67,6 +74,14 @@ export default function OrderDetailPage() {
 
     fetchOrder();
   }, [user, authLoading, router, orderId]);
+
+  // Formater le prix
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat("fr-FR", {
+      style: "currency",
+      currency: order?.currency || "EUR",
+    }).format(price);
+  };
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
@@ -157,6 +172,10 @@ export default function OrderDetailPage() {
     return null;
   }
 
+  // Identifier le numéro de commande à afficher
+  const displayOrderNumber =
+    order.orderNumber || `#${order.id?.substring(0, 8)}`;
+
   return (
     <div className="container px-4 py-8 mx-auto">
       <div className="mb-6">
@@ -176,7 +195,7 @@ export default function OrderDetailPage() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <CardTitle className="text-lg">
-                Commande #{order.id?.substring(0, 8)}
+                Commande {displayOrderNumber}
               </CardTitle>
               <CardDescription>
                 Passée le{" "}
@@ -198,35 +217,85 @@ export default function OrderDetailPage() {
         </CardHeader>
         <CardContent className="space-y-8">
           {/* Informations de la commande */}
-          <div className="grid gap-4 md:grid-cols-2">
+          <div className="grid gap-6 md:grid-cols-2">
             <div>
-              <h3 className="mb-2 font-semibold">Informations de paiement</h3>
-              <p className="text-sm text-muted-foreground">
-                ID de paiement: {order.paymentId?.substring(0, 12)}...
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Méthode: Carte bancaire
-              </p>
-            </div>
-
-            {order.shippingAddress && (
-              <div>
-                <h3 className="mb-2 font-semibold">Adresse de livraison</h3>
-                <p className="text-sm">{order.shippingAddress.name}</p>
-                <p className="text-sm">{order.shippingAddress.address}</p>
-                {order.shippingAddress.addressLine2 && (
-                  <p className="text-sm">
-                    {order.shippingAddress.addressLine2}
+              <h3 className="mb-3 font-semibold">Informations de paiement</h3>
+              <div className="space-y-2 text-sm">
+                <p className="flex items-center gap-2 text-muted-foreground">
+                  ID de paiement:
+                  <span className="font-mono text-foreground">
+                    {order.paymentId?.substring(0, 12)}...
+                  </span>
+                </p>
+                {order.paymentMethod && (
+                  <p className="text-muted-foreground">
+                    Méthode:{" "}
+                    {order.paymentMethod === "card"
+                      ? "Carte bancaire"
+                      : order.paymentMethod}
                   </p>
                 )}
-                <p className="text-sm">
-                  {order.shippingAddress.postalCode}{" "}
-                  {order.shippingAddress.city}
-                </p>
-                <p className="text-sm">{order.shippingAddress.country}</p>
-                {order.phone && (
-                  <p className="mt-2 text-sm">Tél: {order.phone}</p>
+              </div>
+            </div>
+
+            {/* Informations de contact */}
+            <div>
+              <h3 className="mb-3 font-semibold">Informations de contact</h3>
+              <div className="space-y-2">
+                {order.email && (
+                  <p className="flex items-center gap-2 text-sm">
+                    <Mail className="w-4 h-4 text-muted-foreground" />
+                    {order.email}
+                  </p>
                 )}
+                {order.phone && (
+                  <p className="flex items-center gap-2 text-sm">
+                    <Phone className="w-4 h-4 text-muted-foreground" />
+                    {order.phone}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Adresses */}
+          <div className="grid gap-6 md:grid-cols-2">
+            {order.shippingAddress && (
+              <div>
+                <h3 className="mb-3 font-semibold">Adresse de livraison</h3>
+                <div className="space-y-1 text-sm">
+                  <p className="font-medium">{order.shippingAddress.name}</p>
+                  <p>{order.shippingAddress.address}</p>
+                  {order.shippingAddress.addressLine2 && (
+                    <p>{order.shippingAddress.addressLine2}</p>
+                  )}
+                  <p>
+                    {order.shippingAddress.postalCode}{" "}
+                    {order.shippingAddress.city}
+                    {order.shippingAddress.state &&
+                      `, ${order.shippingAddress.state}`}
+                  </p>
+                  <p>{order.shippingAddress.country}</p>
+                </div>
+              </div>
+            )}
+
+            {order.billingAddress && (
+              <div>
+                <h3 className="mb-3 font-semibold">Adresse de facturation</h3>
+                <div className="space-y-1 text-sm">
+                  <p>{order.billingAddress.address}</p>
+                  {order.billingAddress.addressLine2 && (
+                    <p>{order.billingAddress.addressLine2}</p>
+                  )}
+                  <p>
+                    {order.billingAddress.postalCode}{" "}
+                    {order.billingAddress.city}
+                    {order.billingAddress.state &&
+                      `, ${order.billingAddress.state}`}
+                  </p>
+                  <p>{order.billingAddress.country}</p>
+                </div>
               </div>
             )}
           </div>
@@ -261,13 +330,13 @@ export default function OrderDetailPage() {
                       <p className="text-sm">Quantité: {item.quantity}</p>
                       <span className="text-muted-foreground">•</span>
                       <p className="text-sm">
-                        {item.price.toFixed(2)} € l'unité
+                        {formatPrice(item.price)} l'unité
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
                     <p className="font-medium">
-                      {(item.price * item.quantity).toFixed(2)} €
+                      {formatPrice(item.price * item.quantity)}
                     </p>
                   </div>
                 </div>
@@ -283,7 +352,7 @@ export default function OrderDetailPage() {
             <div className="space-y-2">
               <div className="flex justify-between">
                 <span>Sous-total</span>
-                <span>{order.total.toFixed(2)} €</span>
+                <span>{formatPrice(order.total)}</span>
               </div>
               <div className="flex justify-between">
                 <span>Livraison</span>
@@ -292,7 +361,7 @@ export default function OrderDetailPage() {
               <Separator className="my-2" />
               <div className="flex justify-between font-semibold">
                 <span>Total</span>
-                <span>{order.total.toFixed(2)} €</span>
+                <span>{formatPrice(order.total)}</span>
               </div>
             </div>
           </div>

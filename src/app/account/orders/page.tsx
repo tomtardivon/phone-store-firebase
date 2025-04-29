@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ShoppingBag, ArrowRight } from "lucide-react";
+import { ShoppingBag, ArrowRight, Package } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -39,7 +39,7 @@ export default function OrdersPage() {
       try {
         setLoading(true);
         const userOrders = await getUserOrders(user.uid);
-        console.log("Fetched orders:", userOrders); // Debug log
+        console.log("Fetched orders:", userOrders);
         setOrders(userOrders);
         setError(null);
       } catch (error) {
@@ -53,23 +53,31 @@ export default function OrdersPage() {
     fetchOrders();
   }, [user, authLoading, router]);
 
+  // Formater le prix
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat("fr-FR", {
+      style: "currency",
+      currency: "EUR",
+    }).format(price);
+  };
+
   if (authLoading || loading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-2xl font-bold mb-6">Mes commandes</h1>
+      <div className="container px-4 py-8 mx-auto">
+        <h1 className="mb-6 text-2xl font-bold">Mes commandes</h1>
         <div className="space-y-4">
           {[...Array(3)].map((_, i) => (
             <Card key={i}>
               <CardHeader>
-                <Skeleton className="h-6 w-32" />
-                <Skeleton className="h-4 w-48" />
+                <Skeleton className="w-32 h-6" />
+                <Skeleton className="w-48 h-4" />
               </CardHeader>
               <CardContent>
-                <Skeleton className="h-4 w-full mb-2" />
-                <Skeleton className="h-4 w-3/4" />
+                <Skeleton className="w-full h-4 mb-2" />
+                <Skeleton className="w-3/4 h-4" />
               </CardContent>
               <CardFooter>
-                <Skeleton className="h-10 w-32" />
+                <Skeleton className="w-32 h-10" />
               </CardFooter>
             </Card>
           ))}
@@ -80,10 +88,10 @@ export default function OrdersPage() {
 
   if (error) {
     return (
-      <div className="container mx-auto px-4 py-16 text-center">
+      <div className="container px-4 py-16 mx-auto text-center">
         <div className="max-w-md mx-auto">
-          <h1 className="text-2xl font-bold mb-2">Erreur</h1>
-          <p className="text-muted-foreground mb-6">{error}</p>
+          <h1 className="mb-2 text-2xl font-bold">Erreur</h1>
+          <p className="mb-6 text-muted-foreground">{error}</p>
           <Button variant="outline" onClick={() => router.push("/")}>
             Retour à l'accueil
           </Button>
@@ -94,11 +102,11 @@ export default function OrdersPage() {
 
   if (orders.length === 0) {
     return (
-      <div className="container mx-auto px-4 py-16 text-center">
+      <div className="container px-4 py-16 mx-auto text-center">
         <div className="max-w-md mx-auto">
-          <ShoppingBag className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-          <h1 className="text-2xl font-bold mb-2">Aucune commande</h1>
-          <p className="text-muted-foreground mb-6">
+          <ShoppingBag className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+          <h1 className="mb-2 text-2xl font-bold">Aucune commande</h1>
+          <p className="mb-6 text-muted-foreground">
             Vous n'avez pas encore passé de commande
           </p>
           <Button asChild>
@@ -110,24 +118,31 @@ export default function OrdersPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-2xl font-bold mb-6">Mes commandes</h1>
+    <div className="container px-4 py-8 mx-auto">
+      <h1 className="mb-6 text-2xl font-bold">Mes commandes</h1>
       <div className="space-y-4">
         {orders.map((order) => (
           <Card key={order.id}>
             <CardHeader>
-              <div className="flex justify-between items-start">
+              <div className="flex items-start justify-between">
                 <div>
                   <CardTitle className="text-lg">
-                    Commande #{order.id?.substring(0, 8)}
+                    Commande {order.orderNumber || order.id?.substring(0, 8)}
                   </CardTitle>
                   <CardDescription>
-                    Passée le {formatDate(order.createdAt)}
+                    Passée le{" "}
+                    {formatDate(
+                      order.createdAt instanceof Date
+                        ? order.createdAt
+                        : order.createdAt.toDate()
+                    )}
                   </CardDescription>
                 </div>
                 <Badge
                   variant={order.status === "delivered" ? "default" : "outline"}
+                  className="flex items-center gap-1.5"
                 >
+                  <Package className="h-3.5 w-3.5" />
                   {order.status === "paid" && "Payée"}
                   {order.status === "processing" && "En traitement"}
                   {order.status === "shipped" && "Expédiée"}
@@ -141,14 +156,19 @@ export default function OrdersPage() {
                   {order.items.length} article
                   {order.items.length > 1 ? "s" : ""}
                 </p>
-                <p className="font-medium">Total: {order.total.toFixed(2)} €</p>
+                <p className="font-medium">Total: {formatPrice(order.total)}</p>
+                {order.phone && (
+                  <p className="text-sm text-muted-foreground">
+                    Tél: {order.phone}
+                  </p>
+                )}
               </div>
             </CardContent>
             <CardFooter>
               <Button variant="outline" asChild>
                 <Link href={`/account/orders/${order.id}`}>
                   Détails de la commande
-                  <ArrowRight className="ml-2 h-4 w-4" />
+                  <ArrowRight className="w-4 h-4 ml-2" />
                 </Link>
               </Button>
             </CardFooter>
